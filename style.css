@@ -1,0 +1,50 @@
+body{
+			background:#000;
+
+}
+canvas {
+			background-color: #000;
+			display: block;
+			position: absolute;
+			margin: auto;
+			top: 0;
+			bottom: 0;
+			left: 0;
+			right: 0;
+}
+
+.main-container{
+			padding: 15px;
+			color:#fff;
+			font-family: DIN;
+
+}
+
+.game-title{
+			font-size: 50px;
+}
+
+.score-container{
+			padding-right: 40px;
+}
+
+.score-container p{
+			font-size: 32px;
+}
+
+.game-over{
+	position:absolute;
+	z-index:2;
+	background:red;
+	right: 50%;
+	transform:translateX(50%);
+	top:200px;
+	width: 35%;
+	text-align: center;
+}
+
+.game-start{
+	position: absolute;
+	z-index:2;
+	background: green;
+}

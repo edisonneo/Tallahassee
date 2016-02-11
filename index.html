@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <script src="js/game.js"></script>
+        <title>Tallahassee</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+	<div class="main-container">
+		<!-- <div class="game-over container">
+			<div class="col-xs-12">
+				<h1>GAME OVER!</h1>
+				<p id="restart">Restart</p>	
+			</div>
+		</div>
+		<div class="game-start container">
+			<div class="col-xs-12">
+				<h1>Start Game!</h1>	
+			</div>
+		</div> -->
+		<h1 class="game-title">Tallahasee!</h1>    
+	
+	    <div class="score-container" id="score">
+	    	<h3>Score</h3>
+	    	<p></p>
+	    </div>
+	    <div class="score-container" id="prevScore">
+	    	<h3>Previous Score</h3>
+	    	<p></p>
+	    </div>
+	    <div class="score-container" id="highScore">
+	    	<h3>High Score</h3>
+	    	<p></p>
+	    </div>
+	 </div>
+     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+	<script>
+
+
+	//initiate variables
+	var
+
+	display,
+	input,
+	frames,
+
+	player,
+	enemy,
+	bullets,
+	enemies,
+	safezone,
+
+	enemySpeed,
+	enemySpawnRate,
+	score,
+	enemyDirection,
+	gameOver,
+
+	prevScore,
+	currentHs,
+	score;
+
+
+
+
+
+/**
+* Initiate and start the game
+*/
+function main() {
+	// create game canvas and inputhandler
+	display = new Screen(504, 600);
+	input = new InputHandler();
+	player = new Player();		
+	safezone = new Safezone();
+	// initate and run the game
+	init();
+	run();
+};
+
+
+/**
+ * Initate game objects
+ */
+function init() {
+	// set start settings
+	frames  = 0;
+	gameOver = false;
+	enemySpeed = 1;
+	enemySpawnRate = 1500;
+	enemyDirection; 
+	score = 0;
+	saved = false;
+	
+	// create the player object
+	player = {
+		x: (display.width) / 2,
+		y: display.height - 30 ,
+		w: 20,
+		h: 20,
+		color:"#00ecff"
+	};
+	//create safezone object
+	safezone = {
+		x: 0,
+		y: (display.height - 50),
+		w: 504,
+		h: 5,
+		color: "#fff"
+	}
+	//create enemies array
+	enemies = [];
+	//create bullet array
+	bullets = [];
+};
+
+
+/**
+ * Wrapper around the game loop function, updates and renders
+ * the game
+ */
+function run() {
+	$(".score-container").show();
+	//get current highscore saved in local storage
+	currentHs = localStorage.getItem("highScore");
+	console.log(currentHs);
+	//get the score from the previous round
+	prevScore = localStorage.getItem("prevScore");
+	
+	//set the starting display of the scores to 0 if the local storage is empty
+	if (currentHs == null){
+		currentHs = 0;
+	}
+	if (prevScore == null){
+		prevScore = 0;
+	}
+	//Set the text of the high score element to the current highscore	
+	$("#highScore p").text(currentHs);
+	
+	//When the game starts running, push new Enemies to the enemies array
+	//param1 ==> Random Enemy spawn x-position
+	//param2 ==> y-position 
+	//param2 ==> Random Enemy velocity y 
+	//param3 ==> Random Enemy velocity x
+	//param4&5 ==> Enemy width and height
+	//param6 ==> Enemy color
+	setInterval(function(){ 
+		enemies.push(new Enemy((Math.floor((Math.random() * (display.width-20)-200) + 200)), 0, ((Math.random() * 1.5) + 0.5), ((Math.random() * 3)-2), 20, 20, "#ff0000"));
+	}, enemySpawnRate);
+
+
+	$("#score p").text(score);
+	$("#prevScore p").text(prevScore);
+
+
+	var loop = function() {
+		update();
+		render();
+
+		window.requestAnimationFrame(loop, display.canvas);
+	};
+	window.requestAnimationFrame(loop, display.canvas);
+};
+
+
+
+function gameReset(score){
+	previousScore = score;
+	currentHighScore = $("#highScore p").text();
+	gameOver = false;
+	enemies = [];
+	bullets = [];
+	if(score > currentHighScore){
+		$("#highScore p").text(score);		
+	}
+	newHighScore = $("#highScore p").text();
+	$("#score p").text(0);
+	$("#prevScore p").text(previousScore);
+	localStorage.setItem("highScore",newHighScore);
+}
+
+
+
+/**
+ * Update the game logic
+ */
+function update() {
+	// update the frame count
+	frames++;
+	//if game over,
+	if (gameOver){	
+		gameReset(score);
+		score = 0;
+	}
+
+	// // update player position depending on pressed keys
+	if (input.isDown(37)) { // Left
+		player.x -= 7;	
+	}
+	if (input.isDown(39)) { // Right
+		player.x += 7;
+	}
+	// // keep the player sprite inside of the canvas
+	player.x = Math.max(Math.min(player.x, display.width - (10 + player.w)), 10);
+
+	// append new bullet to the bullet array if spacebar is
+	// pressed
+	if (input.isPressed(32)) { // Space
+		if(gameOver){
+			//cant shoot any bullets if game is over
+		}
+		else{
+			//play gun shot sound
+			gunShot();
+			//push new bullet to the bullets array
+			bullets.push(new Bullet(player.x + 10, player.y, -8, 5, 10, "#fff"));
+		}		
+	}
+
+	//keep the enemies in the canvas by reversing trajectory once hit the side
+	for (var k = 0, len3 = enemies.length; k < len3; k++) {
+			var enHitSide = enemies[k];
+			if (enHitSide.x <= 0 || enHitSide.x >= 484){
+				enHitSide.velx *= -1;
+			}
+			//check if enemies hit the safezone
+			var enHitLine = enemies[k];
+			if (AABBIntersect(safezone.x, safezone.y, safezone.w, safezone.h, enHitLine.x, enHitLine.y, enHitLine.width, enHitLine.height)){
+				//if color is red, game is over
+				if (enHitLine.color == "#ff0000"){
+					gameOver = true;
+				}
+				//if color is green, add to the score
+				else if(enHitLine.color == "#00ff00"){
+					saved = true;
+					score++;
+					$("#score p").text(score);
+				}
+			}
+	}
+
+	// // update all bullets position and checks
+	for (var i = 0, len = bullets.length; i < len; i++) {
+		var b = bullets[i];
+		b.update();
+		// remove bullets outside of the canvas
+		if (b.y + b.height < 0 || b.y > display.height) {
+			bullets.splice(i, 1);
+			i--;
+			len--;
+			continue;
+		}
+		//check if bullet hits enemies
+		for (var j = 0, len2 = enemies.length; j < len2; j++) {
+			var enemyHit = enemies[j];
+			if (AABBIntersect(b.x, b.y, b.width, b.height, enemyHit.x, enemyHit.y, enemyHit.width, enemyHit.height)) {
+				//if color is red, change the color to green
+				if(enemyHit.color == "#ff0000"){
+					zombieSound();
+					enemyHit.color = "#00ff00";
+				}
+				//if color is green, game is over
+				else if (enemyHit.color == "#00ff00"){
+					gameOver = true;
+					enemies.splice(j, 1);
+					j--;
+					len2--;
+				}
+				bullets.splice(i, 1);
+				i--;
+				len--;
+			
+			}
+		}
+	}
+
+	//update enemy positions 
+	for (var i = 0, len2 = enemies.length; i < len2; i++) {
+		var ewe = enemies[i];
+		ewe.update();
+		// remove enemies outside of the canvas
+		if (ewe.y + ewe.height < 0 || ewe.y > display.height) {
+			enemies.splice(i, 1);
+			i--;
+			len2--;
+			continue;
+		}
+	}
+};
+
+
+/**
+ * Render the game state to the canvas
+ */
+function render() {
+	display.clear(); // clear the game canvas
+	
+	// save context and draw bullet then restore
+	display.ctx.save();
+	for (var i = 0, len = bullets.length; i < len; i++) {
+		display.drawBullet(bullets[i]);
+	}
+	for (var i = 0, len2 = enemies.length; i < len2; i++) {
+		display.drawBullet(enemies[i]);
+	}
+	display.ctx.restore();
+	
+	//draw the safe zone
+	display.drawSafezone(safezone);
+	// draw the player sprite
+	display.drawPlayer(player);
+};
+
+
+// start and run the game
+main();
+
+
+    </script>
+    </body>	
+</html>
